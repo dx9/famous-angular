@@ -1452,7 +1452,7 @@ angular.module('famous.angular')
                   isolate.play();
                 }
               }
-              if (!isolate.timeline instanceof Function){
+              if (!(isolate.timeline instanceof Function)){
                 throw new Error('timeline must be a reference to a function or duration must be provided');
               }
 
@@ -5803,7 +5803,9 @@ angular.module('famous.angular')
 
             $famousDecorator.addRole('renderable',isolate);
             isolate.show();
-
+            
+            isolate.renderNode.viewSeq = new ViewSequence();
+            isolate.renderNode.sequenceFrom(isolate.renderNode.viewSeq);
 
             var _postDigestScheduled = false;
 
@@ -5821,23 +5823,18 @@ angular.module('famous.angular')
                 _children.sort(function(a, b){
                   return a.index - b.index;
                 });
-
-                var options = {
-                  array: function(_children) {
-                    var _ch = [];
-                    angular.forEach(_children, function(c, i) {
-                      _ch[i] = c.renderGate;
-                    });
-                    return _ch;
-                  }(_children)
-                };
+                
+                angular.forEach(_children, function(c, i) {
+                  if (!isolate.renderNode.viewSeq._.array[i] || isolate.renderNode.viewSeq._.array[i] !== c.renderGate) {
+                    isolate.renderNode.viewSeq._.array[i] = c.renderGate;
+                  }
+                });
+                
+                isolate.renderNode.viewSeq._.array.length = _children.length;
                 //set the first page on the scrollview if
                 //specified
                 if(init)
-                  options.index = scope.$eval(attrs.faStartIndex);
-
-                var viewSeq = new ViewSequence(options);
-                isolate.renderNode.sequenceFrom(viewSeq);
+                  isolate.renderNode.viewSeq.index = scope.$eval(attrs.faStartIndex) || 0;
               });
 
               _postDigestScheduled = true;
@@ -5852,14 +5849,16 @@ angular.module('famous.angular')
               function(childScopeId) {
                 _children = function(_children) {
                   var _ch = [];
-                  angular.forEach(_children, function(c) {
+                  angular.forEach(_children, function(c, i) {
                     if (c.id !== childScopeId) {
                       _ch.push(c);
+                    } else {
+                      isolate.renderNode.viewSeq.splice(i, 1);
                     }
                   });
                   return _ch;
                 }(_children);
-                updateScrollview();
+                isolate.renderNode.viewSeq.length = _children.length;
               },
               updateScrollview
             );

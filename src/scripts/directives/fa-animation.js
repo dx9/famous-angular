@@ -313,7 +313,7 @@ angular.module('famous.angular')
                   isolate.play();
                 }
               }
-              if (!isolate.timeline instanceof Function){
+              if (!(isolate.timeline instanceof Function)){
                 throw new Error('timeline must be a reference to a function or duration must be provided');
               }
 
